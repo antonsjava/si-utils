@@ -42,3 +42,13 @@
 ~~~
   .handle(AdhocMessageConsumer.consumeBy(m -> activeXmlCounter.increase()))  
 ~~~
+
+## InactivityDelayMessageSource
+
+ If You need to delay message source request after pulling null message from internal 
+ message source.
+
+~~~
+   InactivityDelayMessageSource.of(source)
+        .inactivityDelay(Duration.ofMinutes(1))
+~~~

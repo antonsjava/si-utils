@@ -52,3 +52,33 @@
    InactivityDelayMessageSource.of(source)
         .inactivityDelay(Duration.ofMinutes(1))
 ~~~
+
+## MessageSourceBatchAction
+
+ Batch is continuous sequence of non null messages given by delegated message 
+ source. (sequence null, msg, msg, null, msg, null has two batches)
+ 
+ This builder allows you to define action called before or after such batch.
+ Action can be called as synchronous (default) or as asynchronous (new created 
+ thread). All throwables from action code are ignored. 
+ 
+ Start of batch is detected by non null message followed by null message. 
+ Action is called before first batch message is returned.
+ (null, null, (action) msg, msg, null, (action) msg, null, null)
+ 
+ End of batch is detected when delegated mesage source return null after non 
+ null message, So mesage source must be triggered after batch to obtain null 
+ message. Action is called before first non null messafe after batch is 
+ returned
+ (null, null, msg, msg, (action) null, msg, (action) null, null)
+
+
+~~~
+  MessageSourceBatchAction.of(source)
+       .async(true)
+       .action(() -> {
+               try { Thread.sleep(1000); } catch(Exception e) {}
+               solr.softCommit();
+            })
+       .after();
+~~~

@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.support.DefaultMessageBuilderFactory;
 import org.springframework.integration.support.MessageBuilderFactory;
@@ -80,6 +81,17 @@ public class FileByFileMessageSource implements MessageSource<File> {
     }
 
     /**
+     * Provide current file for custom processing and afterwards delete last
+     * provided file from directory and allow next file to be provided.
+     */
+    public void handleCurrentFile(Consumer<File> consumer) {
+        if((currentFile != null) && currentFile.exists()) { currentFile.delete(); } {
+            consumer.accept(currentFile);
+        }
+        delete();
+    }
+
+    /**
      * Move last provided file to specified backup directory and allow next file to be provided.
      */
     public void move() {
@@ -87,6 +99,30 @@ public class FileByFileMessageSource implements MessageSource<File> {
         try {
             if((currentFile != null) && currentFile.exists()) {
                 File destination = new File(backupDirectory.getAbsolutePath()
+                        +  "/" + currentFile.getName());
+                    Files.move(currentFile.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch(Exception e) {
+            throw new IllegalStateException(e);
+        } finally {
+            cleanFile();
+        }
+    }
+
+    /**
+     * Move last provided file to given directory and allow next file to be provided.
+     * @param directory directory where file should be transferred.
+     * @param ensureDirectory create directory if not exists
+     */
+    public void move(String directory, boolean ensureDirectory) {
+        if(directory == null) throw new IllegalStateException("unable to move file, backupDirectory is null");
+        try {
+            if((currentFile != null) && currentFile.exists()) {
+                if(ensureDirectory) {
+                    File f = new File(directory);
+                    if(!f.exists()) f.mkdirs();
+                }
+                File destination = new File(directory
                         +  "/" + currentFile.getName());
                     Files.move(currentFile.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
